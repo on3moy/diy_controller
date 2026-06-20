@@ -1,0 +1,14 @@
+[project]
+name = "diy-controller"
+version = "0.1.0"
+description = "Use a GameSir Cyclone 2 gamepad as a keyboard/mouse presentation remote."
+requires-python = ">=3.9,<3.14"
+dependencies = [
+    "pygame>=2.5",
+    "pynput>=1.7",
+]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=6.31.0",
+]
