@@ -63,6 +63,20 @@ uv run controller_remote.py --diagnose
 Press each button and move each stick. The script prints the button/axis/hat index for every input.
 Update `config.json` with the indices and re-run the main script.
 
+### Sensitivity calibration & testing 🎯
+
+```powershell
+uv run controller_remote.py --setup
+```
+
+First-time setup for stick feel: measures resting stick noise (to set `deadzone`) and true full-push range per axis (to set `axis_max`), then saves both into `config.json`. Movement scales linearly from 0% right at the deadzone edge to 100% at full deflection, so a half-push always feels like half-speed.
+
+```powershell
+uv run controller_remote.py --test
+```
+
+Live readout of the *computed* output (not raw axis values) — sweep the left stick through center, just past the deadzone, quarter, half, and full push in each direction and confirm the percentage/pixel-delta ramps the way you expect before trusting it live.
+
 ### Method 2: Interactive notebook 📓
 
 ```powershell
@@ -90,8 +104,9 @@ All fields are optional and have sensible defaults. Reload config by restarting 
 | Field | Type | Default | Purpose |
 |-------|------|---------|---------|
 | `poll_hz` | int | 60 | Polling frequency in Hz. Higher = lower latency but more CPU usage. [pygame.time.Clock docs](https://www.pygame.org/docs/ref/time.html#pygame.time.Clock.tick) |
-| `deadzone` | float | 0.15 | Ignore stick drift below this threshold (0–1 range). Reduces noise from analog sticks at rest. [pynput mouse movement](https://pynput.readthedocs.io/en/latest/mouse.html) |
-| `mouse_speed` | int | 18 | Multiplier for left-stick cursor movement. Measured in pixels per frame. Increase for faster mouse, decrease for precision. |
+| `deadzone` | float | 0.15 | Ignore stick drift below this threshold (0–1 range). Output ramps linearly from 0% at this edge to 100% at `axis_max`, so it stays proportional instead of jumping straight to `deadzone`%. Set automatically by `--setup`. |
+| `mouse_speed` | int | 55 | Multiplier for left-stick cursor movement at full deflection. Measured in pixels per frame. Increase for faster mouse, decrease for precision. |
+| `axis_max` | dict | `{move_x: 1.0, move_y: 1.0, scroll_x: 1.0, scroll_y: 1.0}` | The real full-push magnitude per axis (some sticks don't reach exactly ±1.0). Used with `deadzone` to rescale output proportionally. Set automatically by `--setup`. |
 
 ### Input mapping
 
@@ -107,8 +122,14 @@ All fields are optional and have sensible defaults. Reload config by restarting 
 ```json
 {
   "deadzone": 0.15,
-  "mouse_speed": 18,
+  "mouse_speed": 55,
   "poll_hz": 60,
+  "axis_max": {
+    "move_x": 1.0,
+    "move_y": 1.0,
+    "scroll_x": 1.0,
+    "scroll_y": 1.0
+  },
   "buttons": {
     "0": "click",
     "1": "esc",
@@ -164,8 +185,12 @@ For advanced configurations, refer to:
 - Some controllers report D-pad as buttons (indices 13–14) instead of a hat input; check which one your device uses.
 
 **Sluggish mouse movement?**
-- Increase `mouse_speed` in config.json (default 18).
+- Increase `mouse_speed` in config.json (default 55).
 - Increase `poll_hz` (default 60 Hz) for lower latency, but watch CPU usage.
+
+**Movement doesn't feel proportional to how far you push the stick?**
+- Run `--setup` to calibrate `deadzone` and `axis_max` for your specific controller.
+- Run `--test` to watch the computed percentage/pixel-delta while sweeping the stick through its full range.
 
 **Actions not firing?**
 - Verify action strings are in the valid list (typos are logged as warnings).
